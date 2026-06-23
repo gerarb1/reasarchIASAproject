@@ -1,0 +1,244 @@
+# Variables globales
+@baseUrl = http://localhost:3000/api/v1
+
+# =====================================================================
+# 1. LOGIN DE ADMINISTRADOR (Predeterminado Sembrado en App)
+# =====================================================================
+# @name loginAdmin
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "admin@research.com",
+  "password": "adminpassword123"
+}
+
+### Extraer Token del Admin
+@admin_token = {{loginAdmin.response.body.token}}
+
+
+# =====================================================================
+# 2. CREACIÓN DE ESTUDIANTE (Rol: STUDENT)
+# =====================================================================
+# @name registerStudent
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Juan Perez",
+  "email": "student.juan@research.com",
+  "password": "studentpassword123",
+  "role": "STUDENT"
+}
+
+### Extraer ID del Estudiante Creado
+@student_id = {{registerStudent.response.body.id}}
+
+
+# =====================================================================
+# 3. CREACIÓN DE PROYECTO (Por el Admin, asignando al Estudiante creado)
+# =====================================================================
+# @name createProject
+POST {{baseUrl}}/projects
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "title": "Estudio de Redes Neuronales Convolucionales",
+  "description": "Investigación sobre el rendimiento de CNNs en diagnóstico médico.",
+  "studentId": "{{student_id}}"
+}
+
+### Extraer ID del Proyecto Creado
+@project_id = {{createProject.response.body.id}}
+
+
+# =====================================================================
+# 4. LOGIN DE ESTUDIANTE
+# =====================================================================
+# @name loginStudent
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "student.juan@research.com",
+  "password": "studentpassword123"
+}
+
+### Extraer Token del Estudiante
+@student_token = {{loginStudent.response.body.token}}
+
+
+# =====================================================================
+# 5. CARGA DE PAPER (Por el Estudiante al Proyecto Asignado)
+# =====================================================================
+# @name uploadPaper
+POST {{baseUrl}}/projects/{{project_id}}/papers
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+  "title": "Optimización de hiperparámetros en ResNet-50",
+  "abstract": "Este paper propone un método adaptativo para ajustar la tasa de aprendizaje durante el entrenamiento de arquitecturas profundas.",
+  "authors": ["Juan Perez", "Dr. Alvarez"],
+  "fileUrl": "https://scientific-storage.org/papers/resnet-opt-juan.pdf"
+}
+
+### Extraer ID del Paper Creado
+@paper_id = {{uploadPaper.response.body.id}}
+
+
+# =====================================================================
+# 6. INTENTO DE CARGA A PROYECTO AJENO (Debe fallar con 403 Forbidden)
+# =====================================================================
+# Crear otro estudiante y un proyecto ajeno
+# @name registerOtherStudent
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Maria Gomez",
+  "email": "student.maria@research.com",
+  "password": "mariapassword123",
+  "role": "STUDENT"
+}
+
+###
+@other_student_id = {{registerOtherStudent.response.body.id}}
+
+### Admin crea proyecto asignado a Maria
+# @name createOtherProject
+POST {{baseUrl}}/projects
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "title": "Proyecto Secreto de Computación Cuántica",
+  "description": "Análisis de algoritmos cuánticos aplicados a criptografía.",
+  "studentId": "{{other_student_id}}"
+}
+
+###
+@other_project_id = {{createOtherProject.response.body.id}}
+
+### Intento del primer estudiante (Juan) de subir paper al proyecto de Maria
+POST {{baseUrl}}/projects/{{other_project_id}}/papers
+Authorization: Bearer {{student_token}}
+Content-Type: application/json
+
+{
+  "title": "Intrusión en Proyecto Cuántico",
+  "abstract": "Análisis no autorizado de datos de computación cuántica.",
+  "authors": ["Juan Perez"],
+  "fileUrl": "https://scientific-storage.org/papers/hack.pdf"
+}
+
+
+# =====================================================================
+# 7. REGISTRO Y LOGIN DE DATA CLEANER
+# =====================================================================
+# @name registerCleaner
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Carlos Limpiador",
+  "email": "cleaner.carlos@research.com",
+  "password": "cleanerpassword123",
+  "role": "DATA_CLEANER"
+}
+
+###
+# @name loginCleaner
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "cleaner.carlos@research.com",
+  "password": "cleanerpassword123"
+}
+
+### Extraer Token del Cleaner
+@cleaner_token = {{loginCleaner.response.body.token}}
+
+
+# =====================================================================
+# 8. LIMPIEZA Y REVISIÓN DEL PAPER (Por el Data Cleaner)
+# =====================================================================
+# @name reviewPaperOk
+PUT {{baseUrl}}/projects/papers/{{paper_id}}/review
+Authorization: Bearer {{cleaner_token}}
+Content-Type: application/json
+
+{
+  "status": "APPROVED",
+  "isCleaned": true,
+  "cleanDataJson": "{\"accuracy_improvement\": 4.2, \"verified\": true}",
+  "ranking": "Q1"
+}
+
+
+# =====================================================================
+# 9. INTENTO DE MODIFICACIÓN DE PDF/TÍTULO POR DATA CLEANER (Debe fallar con 403)
+# =====================================================================
+PUT {{baseUrl}}/projects/papers/{{paper_id}}/review
+Authorization: Bearer {{cleaner_token}}
+Content-Type: application/json
+
+{
+  "status": "APPROVED",
+  "isCleaned": true,
+  "cleanDataJson": "{\"accuracy_improvement\": 4.2}",
+  "ranking": "Q1",
+  "title": "TÍTULO CAMBIADO POR REVISOR",
+  "fileUrl": "https://scientific-storage.org/papers/PDF_MODIFICADO.pdf"
+}
+
+
+# =====================================================================
+# 10. INTENTO DE ASIGNAR UN RANKING INVÁLIDO POR ADMIN (Debe fallar con Zod 400)
+# =====================================================================
+PUT {{baseUrl}}/projects/papers/{{paper_id}}/review
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "status": "APPROVED",
+  "isCleaned": true,
+  "cleanDataJson": "{}",
+  "ranking": "Q5"
+}
+
+
+# =====================================================================
+# 11. VERIFICACIÓN DE AISLAMIENTO: LECTURA DE DETALLES DEL PROYECTO
+# =====================================================================
+# Estudiante Juan lee su propio proyecto (debe ver todos sus papers)
+GET {{baseUrl}}/projects/{{project_id}}
+Authorization: Bearer {{student_token}}
+
+###
+# Estudiante Juan lee el proyecto ajeno de Maria
+# (Debe retornar el proyecto pero SIN papers no aprobados)
+GET {{baseUrl}}/projects/{{other_project_id}}
+Authorization: Bearer {{student_token}}
+
+
+# =====================================================================
+# 12. OBTENER USUARIOS CON FILTRO POR ROL (Solo ADMIN, sanitizado)
+# =====================================================================
+# Admin obtiene lista de estudiantes
+GET {{baseUrl}}/users?role=STUDENT
+Authorization: Bearer {{admin_token}}
+
+###
+# Estudiante intenta obtener lista de usuarios (Debe fallar con 403)
+GET {{baseUrl}}/users
+Authorization: Bearer {{student_token}}
+
+
+# =====================================================================
+# 13. HEALTH CHECK CON UPTIME DEL SERVIDOR
+# =====================================================================
+GET http://localhost:3000/
+
