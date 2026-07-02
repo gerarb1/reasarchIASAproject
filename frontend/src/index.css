@@ -1,305 +1,229 @@
-:root {
-  --bg-color: #0b0f19;
-  --card-bg: rgba(17, 24, 39, 0.7);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --primary: #00f2fe;
-  --secondary: #4facfe;
-  --accent: #a78bfa;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --error: #f87171;
+@import "tailwindcss";
+
+/* ============================================================
+   ResearchCore — Design Tokens & Theme System (Tailwind v4)
+   
+   Uses the @theme directive for custom design tokens.
+   Dark mode is controlled via the `dark` class on <html>.
+   ============================================================ */
+
+@theme {
+  /* ── Typography ── */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Accent Colors (Emerald Scientific) ── */
+  --color-accent-50: oklch(0.97 0.02 160);
+  --color-accent-100: oklch(0.95 0.04 160);
+  --color-accent-200: oklch(0.90 0.08 160);
+  --color-accent-300: oklch(0.82 0.14 163);
+  --color-accent-400: oklch(0.74 0.17 162);
+  --color-accent-500: oklch(0.64 0.18 162);
+  --color-accent-600: oklch(0.55 0.17 162);
+  --color-accent-700: oklch(0.46 0.14 163);
+  --color-accent-800: oklch(0.39 0.11 163);
+  --color-accent-900: oklch(0.33 0.09 164);
+  --color-accent-950: oklch(0.21 0.07 165);
+
+  /* ── Surface Colors ── */
+  --color-surface-primary: var(--color-slate-50);
+  --color-surface-card: #ffffff;
+  --color-surface-elevated: var(--color-slate-100);
+
+  /* ── Text Colors ── */
+  --color-text-primary: var(--color-slate-900);
+  --color-text-secondary: var(--color-slate-600);
+  --color-text-muted: var(--color-slate-500);
+  --color-text-inverted: #ffffff;
+
+  /* ── Border Colors ── */
+  --color-border-default: var(--color-slate-200);
+  --color-border-subtle: var(--color-slate-100);
+
+  /* ── Semantic Status Colors ── */
+  --color-status-success: oklch(0.65 0.18 155);
+  --color-status-warning: oklch(0.75 0.16 75);
+  --color-status-error: oklch(0.63 0.21 25);
+  --color-status-info: oklch(0.63 0.16 255);
+
+  /* ── Shadows ── */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-elevated: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+
+  /* ── Animation Timing ── */
+  --animate-fade-in: fade-in 0.4s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ============================================================
+   Base Layer — Global Resets & Root Styles
+   ============================================================ */
+
+@layer base {
+  /* ── Anti-FOUC is handled via inline script in index.html ── */
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-primary text-text-primary font-sans leading-relaxed;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* ── Dark Mode Surface Overrides ── */
+  .dark body {
+    @apply bg-slate-950 text-slate-50;
+  }
+
+  /* ── Headings ── */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  /* ── Focus Styles ── */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent-500;
+  }
+
+  /* ── Custom Scrollbar — Light ── */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+
+  /* ── Custom Scrollbar — Dark ── */
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    @apply bg-accent-200 text-accent-900;
+  }
+
+  .dark ::selection {
+    @apply bg-accent-800 text-accent-100;
+  }
 }
 
-body {
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  font-family: 'Inter', sans-serif;
-  line-height: 1.6;
-  overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(167, 139, 250, 0.1) 0%, transparent 40%);
-  background-attachment: fixed;
-  min-height: 100vh;
+/* ============================================================
+   Dark Mode — Design Token Overrides
+   These override the @theme tokens when .dark is on <html>
+   ============================================================ */
+
+.dark {
+  --color-surface-primary: var(--color-slate-950);
+  --color-surface-card: var(--color-slate-900);
+  --color-surface-elevated: var(--color-slate-800);
+
+  --color-text-primary: var(--color-slate-50);
+  --color-text-secondary: var(--color-slate-400);
+  --color-text-muted: var(--color-slate-500);
+
+  --color-border-default: var(--color-slate-800);
+  --color-border-subtle: var(--color-slate-800);
+
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.25);
+  --shadow-elevated: 0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-color);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+/* ============================================================
+   Keyframe Animations
+   ============================================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.glass-panel-hover:hover {
-  transform: translateY(-2px);
-  border-color: rgba(79, 172, 254, 0.25);
-  box-shadow: 0 12px 40px 0 rgba(79, 172, 254, 0.12);
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.glass-input {
-  width: 100%;
-  background: rgba(17, 24, 39, 0.5);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  color: #fff;
-  font-family: inherit;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.glass-input:focus {
-  border-color: var(--secondary);
-  box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+@keyframes theme-icon-rotate {
+  from {
+    transform: rotate(-90deg) scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
 }
 
-.glass-input:disabled {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-muted);
-  cursor: not-allowed;
-  border-color: rgba(255, 255, 255, 0.03);
-}
-
-.glass-button {
-  background: linear-gradient(135deg, var(--secondary), var(--primary));
-  border: none;
-  border-radius: 8px;
-  color: #0b0f19;
-  font-family: inherit;
-  font-weight: 600;
-  padding: 0.75rem 1.5rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.glass-button:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
-}
-
-.glass-button:active {
-  transform: translateY(1px);
-}
-
-.glass-button.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  color: #fff;
-}
-
-.glass-button.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-}
-
-.glass-button.danger {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  color: #fff;
-}
-
-.glass-button.danger:hover {
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-}
-
-/* Badges */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.badge.admin {
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--error);
-  border: 1px solid rgba(248, 113, 113, 0.25);
-}
-
-.badge.cleaner {
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--warning);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.badge.student {
-  background: rgba(52, 211, 153, 0.1);
-  color: var(--success);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-}
-
-.badge.pending {
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--warning);
-  border: 1px solid rgba(251, 191, 36, 0.25);
-}
-
-.badge.approved {
-  background: rgba(52, 211, 153, 0.1);
-  color: var(--success);
-  border: 1px solid rgba(52, 211, 153, 0.25);
-}
-
-.badge.rejected {
-  background: rgba(248, 113, 113, 0.1);
-  color: var(--error);
-  border: 1px solid rgba(248, 113, 113, 0.25);
-}
-
-/* Page Layouts */
-.auth-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 2rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 450px;
-  padding: 2.5rem;
-}
-
-.portal-layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.portal-header {
-  border-bottom: 1px solid var(--border-color);
-  padding: 1rem 2rem;
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(11, 15, 25, 0.85);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.portal-container {
-  display: flex;
-  flex: 1;
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  gap: 2rem;
-}
-
-.portal-sidebar {
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sidebar-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.sidebar-btn:hover, .sidebar-btn.active {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.sidebar-btn.active {
-  border-left: 3px solid var(--secondary);
-}
-
-.portal-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  animation: fadeIn 0.4s ease;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideIn {
-  from { transform: translateX(20px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-/* Alerts and Toast */
-.alert-toast {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  z-index: 1000;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  animation: slideIn 0.3s ease;
-}
-
-.alert-toast.success {
-  background: rgba(16, 185, 129, 0.9);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #fff;
-}
-
-.alert-toast.error {
-  background: rgba(239, 68, 68, 0.9);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fff;
+/* ── Utility animation classes ── */
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  .animate-theme-icon {
+    animation: theme-icon-rotate 0.5s ease-out;
+  }
 }

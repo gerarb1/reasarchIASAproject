@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from './features/auth/context/AuthContext';
 import { Login } from './features/auth/components/Login';
 import { AdminDashboard } from './features/projects/components/AdminDashboard';
 import { StudentDashboard } from './features/projects/components/StudentDashboard';
 import { CleanerDashboard } from './features/papers/components/CleanerDashboard';
-import { Navbar } from './components/ui/Navbar';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { DashboardLayout } from './features/dashboard/DashboardLayout';
+import { DevRoleSelector } from './components/ui/DevRoleSelector';
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { getNavItemsForRole } from './features/dashboard/Sidebar';
 
 export const App: React.FC = () => {
-  const { user, isLoading } = useAuth();
-  
+  const { user, isLoading, logout, overrideRole, isRoleSelectorEnabled } = useAuth();
+
   // Toast notifications state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [toastTimeoutId, setToastTimeoutId] = useState<number | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  // Active section state — defaults to first nav item for the user's role
+  const [activeSection, setActiveSection] = useState<string>('');
+
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
     if (toastTimeoutId) {
       window.clearTimeout(toastTimeoutId);
     }
@@ -23,47 +28,95 @@ export const App: React.FC = () => {
       setToast(null);
     }, 3500);
     setToastTimeoutId(id);
+  }, [toastTimeoutId]);
+
+  // Determine the active section, defaulting to the first nav item for the role
+  const getEffectiveSection = () => {
+    if (user) {
+      const navItems = getNavItemsForRole(user.role);
+      if (activeSection && navItems.some(item => item.id === activeSection)) {
+        return activeSection;
+      }
+      // Default to first item
+      return navItems[0]?.id || '';
+    }
+    return '';
   };
+
+  const effectiveSection = getEffectiveSection();
+
+  // When role changes via DevRoleSelector, reset section to first item of new role
+  const handleRoleOverride = useCallback((role: typeof user extends null ? never : NonNullable<typeof user>['role']) => {
+    overrideRole(role);
+    const newNavItems = getNavItemsForRole(role);
+    setActiveSection(newNavItems[0]?.id || '');
+  }, [overrideRole]);
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyItems: 'center', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1rem' }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(79,172,254,0.1)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Cargando sesión...</div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+        <Loader2 className="w-8 h-8 text-accent-600 dark:text-accent-400 animate-spin" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">Cargando sesión...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <>
       {!user ? (
         <Login showToast={showToast} />
       ) : (
-        <div className="portal-layout">
-          <Navbar />
-          {user.role === 'ADMIN' && <AdminDashboard showToast={showToast} />}
-          {user.role === 'STUDENT' && <StudentDashboard showToast={showToast} />}
-          {user.role === 'DATA_CLEANER' && <CleanerDashboard showToast={showToast} />}
-        </div>
+        <DashboardLayout
+          role={user.role}
+          userName={user.name}
+          userEmail={user.email}
+          onLogout={logout}
+          activeSection={effectiveSection}
+          onSectionChange={setActiveSection}
+        >
+          {/* Render the correct dashboard content based on role + section */}
+          {user.role === 'ADMIN' && (
+            <AdminDashboard showToast={showToast} activeSection={effectiveSection} />
+          )}
+          {user.role === 'STUDENT' && (
+            <StudentDashboard showToast={showToast} />
+          )}
+          {user.role === 'DATA_CLEANER' && (
+            <CleanerDashboard showToast={showToast} />
+          )}
+        </DashboardLayout>
       )}
 
-      {/* Toast Alert */}
+      {/* Dev Role Selector */}
+      {isRoleSelectorEnabled && user && (
+        <DevRoleSelector
+          currentRole={user.role}
+          onRoleChange={handleRoleOverride}
+        />
+      )}
+
+      {/* Toast Notification */}
       {toast && (
-        <div className={`alert-toast ${toast.type}`}>
+        <div
+          className={[
+            'fixed bottom-6 right-6 z-[90] flex items-center gap-3',
+            'px-4 py-3 rounded-xl shadow-elevated',
+            'text-sm font-medium text-white',
+            'animate-slide-in-right',
+            toast.type === 'success'
+              ? 'bg-emerald-600 dark:bg-emerald-500'
+              : 'bg-red-600 dark:bg-red-500',
+          ].join(' ')}
+        >
           {toast.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5" />
+            <AlertCircle className="w-5 h-5 shrink-0" />
           )}
           <span>{toast.message}</span>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

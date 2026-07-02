@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
-import { Folder, FileText, Upload, PlusCircle, ExternalLink } from 'lucide-react';
+import { Folder, FileText, Upload, PlusCircle, ExternalLink, Loader2 } from 'lucide-react';
+
+import { Card, CardHeader, CardContent } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Input, Textarea } from '../../../components/ui/Input';
+import { Badge } from '../../../components/ui/Badge';
 
 interface StudentDashboardProps {
   showToast: (message: string, type: 'success' | 'error') => void;
@@ -9,7 +14,7 @@ interface StudentDashboardProps {
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast }) => {
   const { user } = useAuth();
-  
+
   // Lists
   const [assignedProjects, setAssignedProjects] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -77,7 +82,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
     setPaperLoading(true);
     try {
       const authorsArray = paperAuthors.split(',').map(a => a.trim()).filter(a => a.length > 0);
-      
+
       await api.addPaper(selectedProjectId, {
         title: paperTitle,
         abstract: paperAbstract,
@@ -92,7 +97,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
       setPaperAuthors('');
       setPaperFileUrl('');
       setShowUploadForm(false);
-      
+
       // Reload project details
       loadProjectDetails(selectedProjectId);
     } catch (err: any) {
@@ -102,208 +107,294 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
     }
   };
 
+  /* ── Helper: map paper status to Badge variant ── */
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return <Badge variant="approved">Aprobado</Badge>;
+      case 'REJECTED':
+        return <Badge variant="rejected">Rechazado</Badge>;
+      default:
+        return <Badge variant="pending">Pendiente</Badge>;
+    }
+  };
+
   return (
-    <div className="portal-container">
-      {/* Sidebar - Projects list */}
-      <aside className="portal-sidebar">
-        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', color: 'var(--text-muted)', paddingLeft: '1rem', marginBottom: '0.5rem' }}>Mis Proyectos</h3>
-        {loadingList ? (
-          <div style={{ paddingLeft: '1rem' }}>Cargando...</div>
-        ) : assignedProjects.length === 0 ? (
-          <div style={{ paddingLeft: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            No tienes proyectos asignados actualmente. Contacta al administrador.
-          </div>
-        ) : (
-          assignedProjects.map(proj => (
-            <button
-              key={proj.id}
-              onClick={() => setSelectedProjectId(proj.id)}
-              className={`sidebar-btn ${selectedProjectId === proj.id ? 'active' : ''}`}
-            >
-              <Folder className="w-4 h-4" />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
-                {proj.title}
-              </span>
-            </button>
-          ))
-        )}
+    <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
+      {/* ── Project list (left column) ── */}
+      <aside className="w-64 shrink-0 hidden md:block">
+        <Card>
+          <CardHeader>
+            <h3 className="font-display text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              Mis Proyectos
+            </h3>
+          </CardHeader>
+          <CardContent className="p-2 flex flex-col gap-1">
+            {loadingList ? (
+              <div className="flex items-center justify-center py-6 text-slate-400 dark:text-slate-500">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            ) : assignedProjects.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 px-3 py-4 text-center">
+                No tienes proyectos asignados actualmente. Contacta al administrador.
+              </p>
+            ) : (
+              assignedProjects.map(proj => (
+                <button
+                  key={proj.id}
+                  onClick={() => setSelectedProjectId(proj.id)}
+                  className={[
+                    'flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 text-left text-sm',
+                    'transition-colors duration-200',
+                    selectedProjectId === proj.id
+                      ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-400 font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800',
+                  ].join(' ')}
+                >
+                  <Folder className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{proj.title}</span>
+                </button>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </aside>
 
-      {/* Main Content */}
-      <main className="portal-content">
+      {/* ── Mobile project selector (visible on small screens) ── */}
+      <div className="md:hidden mb-4 w-full">
+        {assignedProjects.length > 0 && (
+          <select
+            value={selectedProjectId ?? ''}
+            onChange={e => setSelectedProjectId(e.target.value)}
+            className="w-full rounded-lg border px-3.5 py-2.5 text-sm transition-colors duration-200
+              bg-white border-slate-300 text-slate-900
+              dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-50"
+          >
+            {assignedProjects.map(proj => (
+              <option key={proj.id} value={proj.id}>{proj.title}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* ── Main content ── */}
+      <div className="flex-1 min-w-0 flex flex-col gap-6">
         {selectedProjectId ? (
           loadingDetails ? (
-            <div>Cargando detalles...</div>
+            <div className="flex items-center justify-center py-20 text-slate-400 dark:text-slate-500">
+              <Loader2 className="w-6 h-6 animate-spin mr-3" />
+              <span className="text-sm">Cargando detalles...</span>
+            </div>
           ) : projectDetails ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              
-              {/* Project Header */}
-              <div className="glass-panel" style={{ padding: '2rem' }}>
-                <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.8rem', color: '#fff', marginBottom: '0.5rem' }}>{projectDetails.title}</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{projectDetails.description}</p>
-                <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  <div>
-                    <span style={{ fontWeight: 600 }}>Proyecto ID:</span> {projectDetails.id}
+            <>
+              {/* ── Project Header Card ── */}
+              <Card>
+                <CardContent>
+                  <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1">
+                    {projectDetails.title}
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    {projectDetails.description}
+                  </p>
+                  <div className="flex flex-wrap gap-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
+                    <div>
+                      <span className="font-semibold">Proyecto ID:</span>{' '}
+                      <span className="font-mono">{projectDetails.id}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold">Estado:</span>
+                      <Badge variant={
+                        projectDetails.status === 'ACTIVE' ? 'success'
+                        : projectDetails.status === 'COMPLETED' ? 'info'
+                        : 'default'
+                      }>
+                        {projectDetails.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ fontWeight: 600 }}>Estado:</span> {projectDetails.status}
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              {/* Papers Section */}
+              {/* ── Papers Section ── */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                  <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem' }}>Papers Científicos</h3>
-                  <button
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-50">
+                    Papers Científicos
+                  </h3>
+                  <Button
+                    variant={showUploadForm ? 'ghost' : 'primary'}
+                    size="sm"
+                    icon={<PlusCircle className="w-4 h-4" />}
                     onClick={() => setShowUploadForm(!showUploadForm)}
-                    className="glass-button"
-                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
                   >
-                    <PlusCircle className="w-4 h-4" />
                     {showUploadForm ? 'Cancelar' : 'Subir Paper'}
-                  </button>
+                  </Button>
                 </div>
 
-                {/* Upload Form (Conditional) */}
+                {/* ── Upload Form (slide-up animation) ── */}
                 {showUploadForm && (
-                  <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem', animation: 'fadeIn 0.3s ease' }}>
-                    <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Upload className="w-5 h-5 text-primary" />
-                      Cargar Nuevo Paper Científico
-                    </h4>
-                    <form onSubmit={handleUploadPaper} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Título del Paper</label>
-                          <input
-                            type="text"
-                            className="glass-input"
+                  <Card className="mb-6 animate-in slide-in-from-bottom-4 duration-300">
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Upload className="w-5 h-5 text-accent-600 dark:text-accent-400" />
+                        <h4 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50">
+                          Cargar Nuevo Paper Científico
+                        </h4>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleUploadPaper} className="flex flex-col gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label="Título del Paper"
                             placeholder="Ej. Optimización de Redes neuronales..."
                             value={paperTitle}
                             onChange={e => setPaperTitle(e.target.value)}
                             disabled={paperLoading}
                           />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>URL del PDF original</label>
-                          <input
+                          <Input
+                            label="URL del PDF original"
                             type="url"
-                            className="glass-input"
                             placeholder="https://servidor.org/papers/articulo.pdf"
                             value={paperFileUrl}
                             onChange={e => setPaperFileUrl(e.target.value)}
                             disabled={paperLoading}
                           />
                         </div>
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Autores (separados por comas)</label>
-                        <input
-                          type="text"
-                          className="glass-input"
+                        <Input
+                          label="Autores (separados por comas)"
                           placeholder="Autor Uno, Autor Dos, Profesor Guía"
                           value={paperAuthors}
                           onChange={e => setPaperAuthors(e.target.value)}
                           disabled={paperLoading}
                         />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Resumen (Abstract) - Mínimo 10 caracteres</label>
-                        <textarea
-                          className="glass-input"
+                        <Textarea
+                          label="Resumen (Abstract) - Mínimo 10 caracteres"
                           placeholder="Escribe el resumen ejecutivo de la investigación..."
-                          style={{ minHeight: '80px', resize: 'vertical' }}
+                          className="min-h-[80px]"
                           value={paperAbstract}
                           onChange={e => setPaperAbstract(e.target.value)}
                           disabled={paperLoading}
                         />
-                      </div>
-                      <button type="submit" className="glass-button" style={{ alignSelf: 'flex-start' }} disabled={paperLoading}>
-                        {paperLoading ? 'Subiendo...' : 'Confirmar Carga'}
-                      </button>
-                    </form>
-                  </div>
+                        <div>
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            isLoading={paperLoading}
+                            icon={<Upload className="w-4 h-4" />}
+                          >
+                            {paperLoading ? 'Subiendo...' : 'Confirmar Carga'}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
                 )}
 
-                {/* Papers List */}
+                {/* ── Papers List ── */}
                 {projectDetails.papers.length === 0 ? (
-                  <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No hay papers cargados en este proyecto. Haz click en "Subir Paper" para agregar el primero.
-                  </div>
+                  <Card>
+                    <CardContent className="py-10 text-center">
+                      <FileText className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No hay papers cargados en este proyecto. Haz click en "Subir Paper" para agregar el primero.
+                      </p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="flex flex-col gap-4">
                     {projectDetails.papers.map((paper: any) => (
-                      <div key={paper.id} className="glass-panel" style={{ padding: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                          <div>
-                            <h4 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <FileText className="w-5 h-5 text-secondary" style={{ flexShrink: 0 }} />
-                              {paper.title}
-                            </h4>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                              <span style={{ fontWeight: 600 }}>Autores:</span> {paper.authors.join(', ')}
+                      <Card key={paper.id} hoverable>
+                        <CardContent>
+                          {/* Paper title + actions row */}
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-base font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-accent-600 dark:text-accent-400 shrink-0" />
+                                <span className="truncate">{paper.title}</span>
+                              </h4>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
+                                <span className="font-semibold">Autores:</span> {paper.authors.join(', ')}
+                              </p>
                             </div>
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <a
-                              href={paper.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="glass-button secondary"
-                              style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              PDF
-                            </a>
-                            <span className={`badge ${paper.status.toLowerCase()}`}>
-                              {paper.status === 'PENDING_REVIEW' ? 'Pendiente' : paper.status === 'APPROVED' ? 'Aprobado' : 'Rechazado'}
-                            </span>
-                          </div>
-                        </div>
 
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '1rem 0', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '6px' }}>
-                          <b>Abstract:</b> {paper.abstract}
-                        </p>
-
-                        {/* Cleaning Status info */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginTop: '0.75rem', fontSize: '0.8rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                            <div>
-                              <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Limpieza:</span>{' '}
-                              {paper.isCleaned ? (
-                                <span style={{ color: 'var(--success)', fontWeight: 600 }}>Completada ✓</span>
-                              ) : (
-                                <span style={{ color: 'var(--warning)' }}>No iniciada</span>
-                              )}
-                            </div>
-                            <div>
-                              <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Ranking:</span>{' '}
-                              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{paper.ranking}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <a
+                                href={paper.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md
+                                  bg-slate-100 text-slate-700 border border-slate-200
+                                  hover:bg-slate-200 transition-colors duration-200
+                                  dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                PDF
+                              </a>
+                              {statusBadge(paper.status)}
                             </div>
                           </div>
-                          {paper.isCleaned && paper.cleanDataJson && (
-                            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem 0.75rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--accent)', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                              <b>Datos Limpios (JSON):</b> {paper.cleanDataJson}
+
+                          {/* Abstract */}
+                          <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">Abstract:</span>{' '}
+                              {paper.abstract}
+                            </p>
+                          </div>
+
+                          {/* Cleaning status & ranking */}
+                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-slate-500 dark:text-slate-400">Limpieza:</span>
+                                {paper.isCleaned ? (
+                                  <Badge variant="success">Completada ✓</Badge>
+                                ) : (
+                                  <Badge variant="warning">No iniciada</Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-slate-500 dark:text-slate-400">Ranking:</span>
+                                <span className="font-bold text-accent-600 dark:text-accent-400 text-sm">
+                                  {paper.ranking}
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
+
+                            {paper.isCleaned && paper.cleanDataJson && (
+                              <div className="mt-3 rounded-md bg-slate-950/5 dark:bg-white/[0.02] border border-slate-200 dark:border-slate-800 px-3 py-2 font-mono text-xs text-accent-700 dark:text-accent-400 overflow-x-auto whitespace-pre-wrap">
+                                <span className="font-bold">Datos Limpios (JSON):</span> {paper.cleanDataJson}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div>No se pudieron cargar los detalles del proyecto.</div>
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  No se pudieron cargar los detalles del proyecto.
+                </p>
+              </CardContent>
+            </Card>
           )
         ) : (
-          <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Selecciona un proyecto del menú izquierdo para ver la información.
-          </div>
+          <Card>
+            <CardContent className="py-16 text-center">
+              <Folder className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Selecciona un proyecto del menú izquierdo para ver la información.
+              </p>
+            </CardContent>
+          </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 };
