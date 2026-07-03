@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Sidebar, getNavItemsForRole } from './Sidebar';
+import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import type { UserRole } from './Sidebar';
 import { X } from 'lucide-react';
@@ -24,6 +24,8 @@ function getSectionTitle(sectionId: string): string {
     users: 'Gestión de Usuarios',
     // Cleaner
     quarantine: 'Bandeja Científica',
+    reviewer: 'Evaluación de Papers',
+    'data-workspace': 'Limpieza de Datos (R Engine)',
     // Student
     'my-projects': 'Mis Proyectos',
   };
@@ -53,7 +55,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const sectionTitle = getSectionTitle(activeSection);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 transition-colors duration-300">
       {/* ── Mobile Overlay ── */}
       {mobileMenuOpen && (
         <div

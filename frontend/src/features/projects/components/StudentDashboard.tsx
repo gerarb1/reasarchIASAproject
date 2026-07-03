@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Folder, FileText, Upload, PlusCircle, ExternalLink, Loader2 } from 'lucide-react';
-
 import { Card, CardHeader, CardContent } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Input, Textarea } from '../../../components/ui/Input';
@@ -87,18 +86,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
         title: paperTitle,
         abstract: paperAbstract,
         authors: authorsArray,
-        fileUrl: paperFileUrl
+        fileUrl: paperFileUrl,
       });
 
       showToast('Paper subido correctamente', 'success');
-      // Reset Form
       setPaperTitle('');
       setPaperAbstract('');
       setPaperAuthors('');
       setPaperFileUrl('');
       setShowUploadForm(false);
 
-      // Reload project details
       loadProjectDetails(selectedProjectId);
     } catch (err: any) {
       showToast(err.message || 'Error al subir el paper', 'error');
@@ -107,266 +104,222 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
     }
   };
 
-  /* ── Helper: map paper status to Badge variant ── */
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <Badge variant="approved">Aprobado</Badge>;
-      case 'REJECTED':
-        return <Badge variant="rejected">Rechazado</Badge>;
-      default:
-        return <Badge variant="pending">Pendiente</Badge>;
-    }
-  };
+  // ── Loading state ──
+  const renderLoading = (text: string) => (
+    <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-400">
+      <Loader2 className="w-8 h-8 animate-spin mb-3 text-accent-500" />
+      <p className="text-sm">{text}</p>
+    </div>
+  );
 
   return (
-    <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-      {/* ── Project list (left column) ── */}
-      <aside className="w-64 shrink-0 hidden md:block">
-        <Card>
-          <CardHeader>
-            <h3 className="font-display text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Mis Proyectos
-            </h3>
-          </CardHeader>
-          <CardContent className="p-2 flex flex-col gap-1">
-            {loadingList ? (
-              <div className="flex items-center justify-center py-6 text-slate-400 dark:text-slate-500">
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </div>
-            ) : assignedProjects.length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400 px-3 py-4 text-center">
-                No tienes proyectos asignados actualmente. Contacta al administrador.
-              </p>
-            ) : (
-              assignedProjects.map(proj => (
-                <button
-                  key={proj.id}
-                  onClick={() => setSelectedProjectId(proj.id)}
-                  className={[
-                    'flex items-center gap-2.5 w-full rounded-lg px-3 py-2.5 text-left text-sm',
-                    'transition-colors duration-200',
-                    selectedProjectId === proj.id
-                      ? 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-400 font-semibold'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800',
-                  ].join(' ')}
-                >
-                  <Folder className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{proj.title}</span>
-                </button>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </aside>
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      {/* ── Project List (Left Column) ── */}
+      <div>
+        <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3 px-1">
+          Proyectos Asignados
+        </h3>
 
-      {/* ── Mobile project selector (visible on small screens) ── */}
-      <div className="md:hidden mb-4 w-full">
-        {assignedProjects.length > 0 && (
-          <select
-            value={selectedProjectId ?? ''}
-            onChange={e => setSelectedProjectId(e.target.value)}
-            className="w-full rounded-lg border px-3.5 py-2.5 text-sm transition-colors duration-200
-              bg-white border-slate-300 text-slate-900
-              dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-50"
-          >
-            {assignedProjects.map(proj => (
-              <option key={proj.id} value={proj.id}>{proj.title}</option>
+        {loadingList ? (
+          <div className="py-8 text-center text-sm text-slate-500">Cargando...</div>
+        ) : assignedProjects.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Folder className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No tienes proyectos asignados. Contacta al administrador.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {assignedProjects.map((proj) => (
+              <button
+                key={proj.id}
+                onClick={() => setSelectedProjectId(proj.id)}
+                className={[
+                  'w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-200 cursor-pointer',
+                  selectedProjectId === proj.id
+                    ? 'bg-accent-50 border border-accent-200 text-accent-800 dark:bg-accent-950/40 dark:border-accent-800 dark:text-accent-300'
+                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <Folder className={[
+                  'w-4 h-4 shrink-0',
+                  selectedProjectId === proj.id ? 'text-accent-600 dark:text-accent-400' : 'text-slate-400',
+                ].join(' ')} />
+                <span className="text-sm font-medium truncate">{proj.title}</span>
+              </button>
             ))}
-          </select>
+          </div>
         )}
       </div>
 
-      {/* ── Main content ── */}
-      <div className="flex-1 min-w-0 flex flex-col gap-6">
+      {/* ── Main Content (Right) ── */}
+      <div className="flex flex-col gap-6">
         {selectedProjectId ? (
           loadingDetails ? (
-            <div className="flex items-center justify-center py-20 text-slate-400 dark:text-slate-500">
-              <Loader2 className="w-6 h-6 animate-spin mr-3" />
-              <span className="text-sm">Cargando detalles...</span>
-            </div>
+            renderLoading('Cargando detalles...')
           ) : projectDetails ? (
             <>
-              {/* ── Project Header Card ── */}
+              {/* Project Header */}
               <Card>
                 <CardContent>
-                  <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50 mb-1">
-                    {projectDetails.title}
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {projectDetails.description}
-                  </p>
-                  <div className="flex flex-wrap gap-4 mt-4 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
-                      <span className="font-semibold">Proyecto ID:</span>{' '}
-                      <span className="font-mono">{projectDetails.id}</span>
+                      <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-50">
+                        {projectDetails.title}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        {projectDetails.description}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold">Estado:</span>
-                      <Badge variant={
-                        projectDetails.status === 'ACTIVE' ? 'success'
-                        : projectDetails.status === 'COMPLETED' ? 'info'
-                        : 'default'
-                      }>
-                        {projectDetails.status}
-                      </Badge>
-                    </div>
+                    <Button
+                      variant={showUploadForm ? 'secondary' : 'primary'}
+                      size="sm"
+                      icon={showUploadForm ? undefined : <PlusCircle className="w-4 h-4" />}
+                      onClick={() => setShowUploadForm(!showUploadForm)}
+                    >
+                      {showUploadForm ? 'Cancelar' : 'Subir Paper'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* ── Papers Section ── */}
+              {/* Upload Form */}
+              {showUploadForm && (
+                <Card className="animate-slide-up">
+                  <CardHeader>
+                    <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                      <Upload className="w-5 h-5 text-accent-600 dark:text-accent-400" />
+                      Nuevo Paper
+                    </h3>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleUploadPaper} className="flex flex-col gap-4">
+                      <Input
+                        label="Título del Paper"
+                        type="text"
+                        placeholder="Título de la publicación"
+                        value={paperTitle}
+                        onChange={(e) => setPaperTitle(e.target.value)}
+                        disabled={paperLoading}
+                      />
+                      <Textarea
+                        label="Abstract"
+                        placeholder="Resumen del paper..."
+                        className="min-h-[100px]"
+                        value={paperAbstract}
+                        onChange={(e) => setPaperAbstract(e.target.value)}
+                        disabled={paperLoading}
+                      />
+                      <Input
+                        label="Autores (separados por coma)"
+                        type="text"
+                        placeholder="Autor 1, Autor 2, Autor 3"
+                        value={paperAuthors}
+                        onChange={(e) => setPaperAuthors(e.target.value)}
+                        disabled={paperLoading}
+                      />
+                      <Input
+                        label="URL del PDF"
+                        type="url"
+                        placeholder="https://ejemplo.com/paper.pdf"
+                        value={paperFileUrl}
+                        onChange={(e) => setPaperFileUrl(e.target.value)}
+                        disabled={paperLoading}
+                      />
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        isLoading={paperLoading}
+                        icon={!paperLoading ? <Upload className="w-4 h-4" /> : undefined}
+                      >
+                        {paperLoading ? 'Subiendo...' : 'Subir Paper'}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Papers List */}
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-50">
-                    Papers Científicos
-                  </h3>
-                  <Button
-                    variant={showUploadForm ? 'ghost' : 'primary'}
-                    size="sm"
-                    icon={<PlusCircle className="w-4 h-4" />}
-                    onClick={() => setShowUploadForm(!showUploadForm)}
-                  >
-                    {showUploadForm ? 'Cancelar' : 'Subir Paper'}
-                  </Button>
-                </div>
-
-                {/* ── Upload Form (slide-up animation) ── */}
-                {showUploadForm && (
-                  <Card className="mb-6 animate-in slide-in-from-bottom-4 duration-300">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Upload className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-                        <h4 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50">
-                          Cargar Nuevo Paper Científico
-                        </h4>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={handleUploadPaper} className="flex flex-col gap-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Input
-                            label="Título del Paper"
-                            placeholder="Ej. Optimización de Redes neuronales..."
-                            value={paperTitle}
-                            onChange={e => setPaperTitle(e.target.value)}
-                            disabled={paperLoading}
-                          />
-                          <Input
-                            label="URL del PDF original"
-                            type="url"
-                            placeholder="https://servidor.org/papers/articulo.pdf"
-                            value={paperFileUrl}
-                            onChange={e => setPaperFileUrl(e.target.value)}
-                            disabled={paperLoading}
-                          />
-                        </div>
-                        <Input
-                          label="Autores (separados por comas)"
-                          placeholder="Autor Uno, Autor Dos, Profesor Guía"
-                          value={paperAuthors}
-                          onChange={e => setPaperAuthors(e.target.value)}
-                          disabled={paperLoading}
-                        />
-                        <Textarea
-                          label="Resumen (Abstract) - Mínimo 10 caracteres"
-                          placeholder="Escribe el resumen ejecutivo de la investigación..."
-                          className="min-h-[80px]"
-                          value={paperAbstract}
-                          onChange={e => setPaperAbstract(e.target.value)}
-                          disabled={paperLoading}
-                        />
-                        <div>
-                          <Button
-                            type="submit"
-                            variant="primary"
-                            isLoading={paperLoading}
-                            icon={<Upload className="w-4 h-4" />}
-                          >
-                            {paperLoading ? 'Subiendo...' : 'Confirmar Carga'}
-                          </Button>
-                        </div>
-                      </form>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* ── Papers List ── */}
+                <h4 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50 mb-3">
+                  Papers del Proyecto
+                </h4>
                 {projectDetails.papers.length === 0 ? (
                   <Card>
-                    <CardContent className="py-10 text-center">
-                      <FileText className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-3" />
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        No hay papers cargados en este proyecto. Haz click en "Subir Paper" para agregar el primero.
+                        No hay papers subidos en este proyecto.
                       </p>
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-3">
                     {projectDetails.papers.map((paper: any) => (
                       <Card key={paper.id} hoverable>
                         <CardContent>
-                          {/* Paper title + actions row */}
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <h4 className="text-base font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-accent-600 dark:text-accent-400 shrink-0" />
-                                <span className="truncate">{paper.title}</span>
-                              </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 ml-7">
-                                <span className="font-semibold">Autores:</span> {paper.authors.join(', ')}
-                              </p>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FileText className="w-4 h-4 text-accent-600 dark:text-accent-400 shrink-0" />
+                                <h5 className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">
+                                  {paper.title}
+                                </h5>
+                              </div>
+                              {paper.authors && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 ml-6">
+                                  {Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}
+                                </p>
+                              )}
                             </div>
-
                             <div className="flex items-center gap-2 shrink-0">
-                              <a
-                                href={paper.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md
-                                  bg-slate-100 text-slate-700 border border-slate-200
-                                  hover:bg-slate-200 transition-colors duration-200
-                                  dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
+                              <Badge
+                                variant={
+                                  paper.status === 'APPROVED'
+                                    ? 'approved'
+                                    : paper.status === 'REJECTED'
+                                    ? 'rejected'
+                                    : 'pending'
+                                }
                               >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                PDF
-                              </a>
-                              {statusBadge(paper.status)}
+                                {paper.status === 'PENDING_REVIEW'
+                                  ? 'Pendiente'
+                                  : paper.status === 'APPROVED'
+                                  ? 'Aprobado'
+                                  : 'Rechazado'}
+                              </Badge>
+                              {paper.fileUrl && (
+                                <a
+                                  href={paper.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 transition-colors"
+                                  title="Ver PDF"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              )}
                             </div>
                           </div>
 
-                          {/* Abstract */}
-                          <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-4 py-3 border border-slate-100 dark:border-slate-800">
-                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                              <span className="font-semibold text-slate-700 dark:text-slate-300">Abstract:</span>{' '}
-                              {paper.abstract}
-                            </p>
-                          </div>
-
-                          {/* Cleaning status & ranking */}
-                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Limpieza:</span>
-                                {paper.isCleaned ? (
-                                  <Badge variant="success">Completada ✓</Badge>
-                                ) : (
-                                  <Badge variant="warning">No iniciada</Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-slate-500 dark:text-slate-400">Ranking:</span>
-                                <span className="font-bold text-accent-600 dark:text-accent-400 text-sm">
-                                  {paper.ranking}
-                                </span>
-                              </div>
+                          <div className="flex gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                            <div>
+                              Limpieza:{' '}
+                              {paper.isCleaned ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sí ✓</span>
+                              ) : (
+                                'No'
+                              )}
                             </div>
-
-                            {paper.isCleaned && paper.cleanDataJson && (
-                              <div className="mt-3 rounded-md bg-slate-950/5 dark:bg-white/[0.02] border border-slate-200 dark:border-slate-800 px-3 py-2 font-mono text-xs text-accent-700 dark:text-accent-400 overflow-x-auto whitespace-pre-wrap">
-                                <span className="font-bold">Datos Limpios (JSON):</span> {paper.cleanDataJson}
-                              </div>
-                            )}
+                            <div>
+                              Ranking:{' '}
+                              <span className="text-accent-600 dark:text-accent-400 font-medium">
+                                {paper.ranking}
+                              </span>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -377,19 +330,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ showToast })
             </>
           ) : (
             <Card>
-              <CardContent className="py-10 text-center">
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No se pudieron cargar los detalles del proyecto.
-                </p>
+              <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                Error al cargar la información del proyecto.
               </CardContent>
             </Card>
           )
         ) : (
           <Card>
-            <CardContent className="py-16 text-center">
-              <Folder className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Selecciona un proyecto del menú izquierdo para ver la información.
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Folder className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <h4 className="text-lg font-display font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Selecciona un proyecto
+              </h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs text-center">
+                Elige un proyecto del panel izquierdo para ver sus papers y subir nuevas publicaciones.
               </p>
             </CardContent>
           </Card>

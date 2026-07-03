@@ -2,13 +2,11 @@ import React from 'react';
 import {
   FlaskConical,
   Users,
-  UserPlus,
   Folder,
-  FolderPlus,
   FileText,
-  Upload,
   Filter,
-  CheckCircle,
+  Microscope,
+  Wrench,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -32,6 +30,8 @@ export function getNavItemsForRole(role: UserRole): NavItem[] {
     case 'DATA_CLEANER':
       return [
         { id: 'quarantine', label: 'Bandeja Científica', icon: <Filter className="w-5 h-5" /> },
+        { id: 'reviewer', label: 'Evaluación de Papers', icon: <Microscope className="w-5 h-5" /> },
+        { id: 'data-workspace', label: 'Limpieza de Datos', icon: <Wrench className="w-5 h-5" /> },
       ];
     case 'STUDENT':
       return [

@@ -29,7 +29,6 @@ function getRoleBadge(role: UserRole) {
 export const Header: React.FC<HeaderProps> = ({
   sectionTitle,
   role,
-  userName,
   onLogout,
   onMenuToggle,
 }) => {

@@ -1,38 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../../services/api';
-import { Folder, FileText, CheckCircle, Database, Lock, ExternalLink, Loader2 } from 'lucide-react';
-
-import { Button } from '../../../components/ui/Button';
+import {
+  Folder,
+  FileText,
+  CheckCircle,
+  Database,
+  Lock,
+  ExternalLink,
+  Loader2,
+} from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../../../components/ui/Card';
-import { Input, Textarea } from '../../../components/ui/Input';
-import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Textarea } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
+import { Badge } from '../../../components/ui/Badge';
 
 interface CleanerDashboardProps {
   showToast: (message: string, type: 'success' | 'error') => void;
 }
-
-const statusBadgeVariant = (status: string) => {
-  switch (status) {
-    case 'APPROVED':
-      return 'approved' as const;
-    case 'REJECTED':
-      return 'rejected' as const;
-    default:
-      return 'pending' as const;
-  }
-};
-
-const statusLabel = (status: string) => {
-  switch (status) {
-    case 'APPROVED':
-      return 'Aprobado';
-    case 'REJECTED':
-      return 'Rechazado';
-    default:
-      return 'Pendiente';
-  }
-};
 
 const statusOptions = [
   { value: 'PENDING_REVIEW', label: 'Pendiente' },
@@ -85,7 +70,6 @@ export const CleanerDashboard: React.FC<CleanerDashboardProps> = ({ showToast })
     try {
       const data = await api.getProjectDetails(id);
       setProjectDetails(data);
-      // Reset selected paper when switching project
       setSelectedPaper(null);
     } catch (err: any) {
       showToast('Error al cargar detalles del proyecto', 'error');
@@ -134,14 +118,12 @@ export const CleanerDashboard: React.FC<CleanerDashboardProps> = ({ showToast })
         isCleaned,
         cleanDataJson: cleanDataJson || null,
         ranking,
-        // Enviar título y fileUrl originales para validar inmutabilidad en backend
         title: selectedPaper.title,
-        fileUrl: selectedPaper.fileUrl
+        fileUrl: selectedPaper.fileUrl,
       });
 
       showToast('Limpieza y revisión guardadas correctamente', 'success');
       setSelectedPaper(null);
-      // Reload project details
       if (selectedProjectId) {
         loadProjectDetails(selectedProjectId);
       }
@@ -152,299 +134,301 @@ export const CleanerDashboard: React.FC<CleanerDashboardProps> = ({ showToast })
     }
   };
 
+  // ── Loading spinner ──
+  const renderLoading = (text: string) => (
+    <div className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-400">
+      <Loader2 className="w-8 h-8 animate-spin mb-3 text-accent-500" />
+      <p className="text-sm">{text}</p>
+    </div>
+  );
+
+  const getStatusBadgeVariant = (status: string) => {
+    if (status === 'APPROVED') return 'approved';
+    if (status === 'REJECTED') return 'rejected';
+    return 'pending';
+  };
+
+  const getStatusLabel = (status: string) => {
+    if (status === 'APPROVED') return 'Aprobado';
+    if (status === 'REJECTED') return 'Rechazado';
+    return 'Pendiente';
+  };
+
   return (
-    <div className="space-y-6">
-      {/* ── Project Selector ── */}
-      <Card>
-        <CardHeader>
-          <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-50">
-            Bandeja Científica
-          </h2>
-        </CardHeader>
-        <CardContent className="p-3">
-          {loadingList ? (
-            <div className="flex items-center justify-center gap-2 py-4 text-sm text-slate-500">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Cargando proyectos…
-            </div>
-          ) : projects.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-              No hay proyectos registrados en el sistema.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {projects.map(proj => (
-                <button
-                  key={proj.id}
-                  onClick={() => setSelectedProjectId(proj.id)}
-                  className={[
-                    'inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium',
-                    'transition-colors duration-200 cursor-pointer',
-                    'border',
-                    selectedProjectId === proj.id
-                      ? 'bg-accent-50 text-accent-700 border-accent-300 dark:bg-accent-950/50 dark:text-accent-400 dark:border-accent-700'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700',
-                  ].join(' ')}
-                >
-                  <Folder className="w-4 h-4 shrink-0" />
-                  <span className="truncate max-w-[200px]">{proj.title}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      {/* ── Project Selector (Top Bar) ── */}
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0">
+          Proyecto:
+        </h3>
+        {loadingList ? (
+          <span className="text-sm text-slate-500">Cargando...</span>
+        ) : projects.length === 0 ? (
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            No hay proyectos registrados en el sistema.
+          </span>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {projects.map((proj) => (
+              <button
+                key={proj.id}
+                onClick={() => setSelectedProjectId(proj.id)}
+                className={[
+                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer',
+                  selectedProjectId === proj.id
+                    ? 'bg-accent-50 text-accent-800 border border-accent-200 dark:bg-accent-950/40 dark:text-accent-300 dark:border-accent-800'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <Folder className="w-3.5 h-3.5" />
+                <span className="truncate max-w-[180px]">{proj.title}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* ── Main Grid: Papers List + Review Panel ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-        {/* ── Left: Selected Project Details & Papers List ── */}
-        <div className="space-y-5">
-          {selectedProjectId ? (
-            loadingDetails ? (
+      {/* ── Main Content ── */}
+      {selectedProjectId ? (
+        loadingDetails ? (
+          renderLoading('Cargando detalles...')
+        ) : projectDetails ? (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* ── Left: Project details + Papers list ── */}
+            <div className="flex flex-col gap-4">
+              {/* Project Info */}
               <Card>
                 <CardContent>
-                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Cargando detalles…
-                  </div>
+                  <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-50">
+                    {projectDetails.title}
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    {projectDetails.description}
+                  </p>
                 </CardContent>
               </Card>
-            ) : projectDetails ? (
-              <>
-                {/* Project Info Card */}
+
+              {/* Papers */}
+              <h4 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50">
+                Papers para Revisar
+              </h4>
+
+              {projectDetails.papers.length === 0 ? (
                 <Card>
-                  <CardContent>
-                    <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-50">
-                      {projectDetails.title}
-                    </h3>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      {projectDetails.description}
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-3" />
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      No hay papers subidos en este proyecto.
                     </p>
                   </CardContent>
                 </Card>
-
-                {/* Papers List */}
-                <div className="space-y-3">
-                  <h4 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50">
-                    Papers para Revisar
-                  </h4>
-
-                  {projectDetails.papers.length === 0 ? (
-                    <Card>
-                      <CardContent>
-                        <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                          No hay papers subidos en este proyecto.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="space-y-3">
-                      {projectDetails.papers.map((paper: any) => (
-                        <Card
-                          key={paper.id}
-                          hoverable
-                          onClick={() => handleSelectPaper(paper)}
-                          className={[
-                            'border-l-4 transition-all duration-200',
-                            selectedPaper?.id === paper.id
-                              ? 'border-l-accent-500 dark:border-l-accent-400 ring-1 ring-accent-200 dark:ring-accent-800'
-                              : 'border-l-transparent hover:border-l-slate-300 dark:hover:border-l-slate-600',
-                          ].join(' ')}
-                        >
-                          <CardContent className="px-5 py-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <h5 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">
-                                <FileText className="w-4 h-4 shrink-0 text-amber-500 dark:text-amber-400" />
-                                {paper.title}
-                              </h5>
-                              <Badge variant={statusBadgeVariant(paper.status)}>
-                                {statusLabel(paper.status)}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400">
-                              <span>
-                                Limpieza:{' '}
-                                {paper.isCleaned ? (
-                                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Si ✓</span>
-                                ) : (
-                                  'No'
-                                )}
-                              </span>
-                              <span>
-                                Ranking:{' '}
-                                <span className="text-accent-600 dark:text-accent-400 font-medium">{paper.ranking}</span>
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {projectDetails.papers.map((paper: any) => (
+                    <button
+                      key={paper.id}
+                      onClick={() => handleSelectPaper(paper)}
+                      className={[
+                        'w-full text-left rounded-xl border p-4 transition-all duration-200 cursor-pointer',
+                        selectedPaper?.id === paper.id
+                          ? 'border-l-4 border-l-amber-500 border-t-slate-200 border-r-slate-200 border-b-slate-200 bg-amber-50/50 dark:border-l-amber-400 dark:border-t-slate-700 dark:border-r-slate-700 dark:border-b-slate-700 dark:bg-amber-950/20'
+                          : 'border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 dark:hover:border-slate-700',
+                      ].join(' ')}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+                          <span className="text-sm font-semibold text-slate-900 dark:text-slate-50 truncate">
+                            {paper.title}
+                          </span>
+                        </div>
+                        <Badge variant={getStatusBadgeVariant(paper.status)} className="text-[0.6rem] shrink-0">
+                          {getStatusLabel(paper.status)}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div>
+                          Limpieza:{' '}
+                          {paper.isCleaned ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">Sí ✓</span>
+                          ) : (
+                            'No'
+                          )}
+                        </div>
+                        <div>
+                          Ranking:{' '}
+                          <span className="text-accent-600 dark:text-accent-400 font-medium">{paper.ranking}</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </>
-            ) : (
-              <Card>
-                <CardContent>
-                  <p className="py-4 text-center text-sm text-red-500 dark:text-red-400">
-                    Error al cargar información.
-                  </p>
-                </CardContent>
-              </Card>
-            )
-          ) : (
-            <Card>
-              <CardContent>
-                <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                  Selecciona un proyecto del panel superior.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              )}
+            </div>
 
-        {/* ── Right: Selected Paper Review Panel ── */}
-        <div>
-          {selectedPaper ? (
-            <Card className="animate-in fade-in duration-300">
-              <CardHeader>
-                <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
-                  <Database className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                  Limpieza y Metadatos de Publicación
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmitReview} className="space-y-5">
-
-                  {/* Original Title (Read-only) */}
-                  <Input
-                    label="Título Original (Inmutable)"
-                    icon={<Lock className="w-3.5 h-3.5" />}
-                    value={selectedPaper.title}
-                    disabled
-                  />
-
-                  {/* Original File URL (Read-only) */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <span className="text-slate-400 dark:text-slate-500">
+            {/* ── Right: Review Panel ── */}
+            <div>
+              {selectedPaper ? (
+                <Card className="animate-fade-in sticky top-24">
+                  <CardHeader>
+                    <h3 className="font-display text-lg font-semibold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                      Limpieza y Metadatos
+                    </h3>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSubmitReview} className="flex flex-col gap-4">
+                      {/* Immutable Title */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                           <Lock className="w-3.5 h-3.5" />
-                        </span>
-                        Enlace PDF Original (Inmutable)
-                      </label>
-                      <a
-                        href={selectedPaper.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-accent-600 dark:text-accent-400 hover:underline transition-colors duration-200"
+                          Título Original (Inmutable)
+                        </label>
+                        <input
+                          type="text"
+                          value={selectedPaper.title}
+                          disabled
+                          className="w-full rounded-lg border px-3.5 py-2.5 text-sm bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800/30 dark:border-slate-700 dark:text-slate-500 cursor-not-allowed"
+                        />
+                      </div>
+
+                      {/* Immutable File URL */}
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5" />
+                            Enlace PDF (Inmutable)
+                          </label>
+                          <a
+                            href={selectedPaper.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-accent-600 dark:text-accent-400 hover:text-accent-700 dark:hover:text-accent-300 flex items-center gap-1 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Ver PDF
+                          </a>
+                        </div>
+                        <input
+                          type="text"
+                          value={selectedPaper.fileUrl}
+                          disabled
+                          className="w-full rounded-lg border px-3.5 py-2.5 text-sm bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800/30 dark:border-slate-700 dark:text-slate-500 cursor-not-allowed truncate"
+                        />
+                      </div>
+
+                      {/* Status + Ranking row */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <Select
+                          label="Estado de Aprobación"
+                          options={statusOptions}
+                          value={reviewStatus}
+                          onChange={(e) => setReviewStatus(e.target.value as any)}
+                          disabled={submitLoading}
+                        />
+                        <Select
+                          label="Ranking (SJR)"
+                          options={rankingOptions}
+                          value={ranking}
+                          onChange={(e) => setRanking(e.target.value as any)}
+                          disabled={submitLoading}
+                        />
+                      </div>
+
+                      {/* isCleaned Toggle */}
+                      <label
+                        htmlFor="isCleanedCheckbox"
+                        className={[
+                          'flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all duration-200',
+                          isCleaned
+                            ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 dark:bg-slate-800/30 dark:border-slate-700 dark:hover:bg-slate-800/50',
+                        ].join(' ')}
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        Ver PDF
-                      </a>
-                    </div>
-                    <Input
-                      value={selectedPaper.fileUrl}
-                      disabled
-                    />
-                  </div>
+                        <input
+                          type="checkbox"
+                          id="isCleanedCheckbox"
+                          checked={isCleaned}
+                          onChange={(e) => setIsCleaned(e.target.checked)}
+                          disabled={submitLoading}
+                          className="w-4 h-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 cursor-pointer"
+                        />
+                        <span className={[
+                          'text-sm font-medium',
+                          isCleaned
+                            ? 'text-emerald-700 dark:text-emerald-400'
+                            : 'text-slate-700 dark:text-slate-300',
+                        ].join(' ')}>
+                          Datos científicos limpios y verificados
+                        </span>
+                      </label>
 
-                  {/* Status + Ranking Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Select
-                      label="Estado de Aprobación"
-                      value={reviewStatus}
-                      onChange={e => setReviewStatus(e.target.value as any)}
-                      disabled={submitLoading}
-                      options={statusOptions}
-                    />
-                    <Select
-                      label="Ranking (SJR)"
-                      value={ranking}
-                      onChange={e => setRanking(e.target.value as any)}
-                      disabled={submitLoading}
-                      options={rankingOptions}
-                    />
-                  </div>
+                      {/* Clean Data JSON */}
+                      <Textarea
+                        label="Datos Limpios (Formato JSON)"
+                        value={cleanDataJson}
+                        onChange={(e) => setCleanDataJson(e.target.value)}
+                        disabled={submitLoading}
+                        className="min-h-[120px] font-mono text-xs"
+                        placeholder='{ "accuracy": 98.2 }'
+                      />
 
-                  {/* isCleaned Toggle */}
-                  <label
-                    htmlFor="isCleanedCheckbox"
-                    className={[
-                      'flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer',
-                      'transition-colors duration-200',
-                      isCleaned
-                        ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-800'
-                        : 'bg-slate-50 border-slate-200 dark:bg-slate-800/50 dark:border-slate-700',
-                      submitLoading ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-300 dark:hover:border-slate-600',
-                    ].join(' ')}
-                  >
-                    <input
-                      type="checkbox"
-                      id="isCleanedCheckbox"
-                      checked={isCleaned}
-                      onChange={e => setIsCleaned(e.target.checked)}
-                      disabled={submitLoading}
-                      className="w-4.5 h-4.5 rounded border-slate-300 text-accent-600 focus:ring-accent-500 dark:border-slate-600 dark:bg-slate-800 cursor-pointer"
-                    />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      Marcar datos científicos como limpios y verificados
-                    </span>
-                    {isCleaned && (
-                      <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 ml-auto shrink-0" />
-                    )}
-                  </label>
-
-                  {/* cleanDataJson Textarea */}
-                  <Textarea
-                    label="Datos Limpios (Formato JSON)"
-                    value={cleanDataJson}
-                    onChange={e => setCleanDataJson(e.target.value)}
-                    disabled={submitLoading}
-                    className="min-h-[120px] font-mono text-xs"
-                    placeholder='{ "accuracy": 98.2 }'
-                  />
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-1">
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      isLoading={submitLoading}
-                      icon={<CheckCircle className="w-4 h-4" />}
-                      className="flex-1"
-                    >
-                      {submitLoading ? 'Guardando…' : 'Aprobar y Guardar'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setSelectedPaper(null)}
-                      disabled={submitLoading}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <CheckCircle className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-4" />
-                  <h4 className="font-display text-base font-semibold text-slate-700 dark:text-slate-300">
-                    Ningún paper seleccionado
-                  </h4>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                    Haz click en un paper de la lista para abrir el panel de revisión de metadatos.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+                      {/* Actions */}
+                      <div className="flex gap-3 mt-1">
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          isLoading={submitLoading}
+                          className="flex-1"
+                        >
+                          {submitLoading ? 'Guardando...' : 'Aprobar y Guardar'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setSelectedPaper(null)}
+                          disabled={submitLoading}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                    <h4 className="font-display text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Ningún paper seleccionado
+                    </h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs text-center">
+                      Haz click en un paper de la lista de la izquierda para abrir el panel de revisión.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+              Error al cargar información del proyecto.
+            </CardContent>
+          </Card>
+        )
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Folder className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+            <h4 className="font-display text-lg font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Selecciona un proyecto
+            </h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Elige un proyecto de la barra superior para revisar sus papers.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

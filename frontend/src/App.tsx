@@ -4,6 +4,8 @@ import { Login } from './features/auth/components/Login';
 import { AdminDashboard } from './features/projects/components/AdminDashboard';
 import { StudentDashboard } from './features/projects/components/StudentDashboard';
 import { CleanerDashboard } from './features/papers/components/CleanerDashboard';
+import { ReviewerDashboard } from './features/papers/components/ReviewerDashboard';
+import { DataCleanerWorkspace } from './features/papers/components/DataCleanerWorkspace';
 import { DashboardLayout } from './features/dashboard/DashboardLayout';
 import { DevRoleSelector } from './components/ui/DevRoleSelector';
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
@@ -16,7 +18,7 @@ export const App: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [toastTimeoutId, setToastTimeoutId] = useState<number | null>(null);
 
-  // Active section state — defaults to first nav item for the user's role
+  // Active section state
   const [activeSection, setActiveSection] = useState<string>('');
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -30,14 +32,12 @@ export const App: React.FC = () => {
     setToastTimeoutId(id);
   }, [toastTimeoutId]);
 
-  // Determine the active section, defaulting to the first nav item for the role
   const getEffectiveSection = () => {
     if (user) {
       const navItems = getNavItemsForRole(user.role);
       if (activeSection && navItems.some(item => item.id === activeSection)) {
         return activeSection;
       }
-      // Default to first item
       return navItems[0]?.id || '';
     }
     return '';
@@ -45,7 +45,6 @@ export const App: React.FC = () => {
 
   const effectiveSection = getEffectiveSection();
 
-  // When role changes via DevRoleSelector, reset section to first item of new role
   const handleRoleOverride = useCallback((role: typeof user extends null ? never : NonNullable<typeof user>['role']) => {
     overrideRole(role);
     const newNavItems = getNavItemsForRole(role);
@@ -54,7 +53,7 @@ export const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-slate-50 dark:bg-zinc-950 transition-colors duration-200">
         <Loader2 className="w-8 h-8 text-accent-600 dark:text-accent-400 animate-spin" />
         <p className="text-sm text-slate-500 dark:text-slate-400">Cargando sesión...</p>
       </div>
@@ -74,15 +73,25 @@ export const App: React.FC = () => {
           activeSection={effectiveSection}
           onSectionChange={setActiveSection}
         >
-          {/* Render the correct dashboard content based on role + section */}
+          {/* ── ADMIN ── */}
           {user.role === 'ADMIN' && (
             <AdminDashboard showToast={showToast} activeSection={effectiveSection} />
           )}
+
+          {/* ── STUDENT ── */}
           {user.role === 'STUDENT' && (
             <StudentDashboard showToast={showToast} />
           )}
-          {user.role === 'DATA_CLEANER' && (
+
+          {/* ── DATA_CLEANER: Multiple Sections ── */}
+          {user.role === 'DATA_CLEANER' && effectiveSection === 'quarantine' && (
             <CleanerDashboard showToast={showToast} />
+          )}
+          {user.role === 'DATA_CLEANER' && effectiveSection === 'reviewer' && (
+            <ReviewerDashboard showToast={showToast} />
+          )}
+          {user.role === 'DATA_CLEANER' && effectiveSection === 'data-workspace' && (
+            <DataCleanerWorkspace showToast={showToast} />
           )}
         </DashboardLayout>
       )}
