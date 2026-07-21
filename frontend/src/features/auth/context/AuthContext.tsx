@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, type UserProfile } from '../../../services/api';
 
 interface AuthContextType {
@@ -9,9 +9,15 @@ interface AuthContextType {
   logout: () => void;
   registerUser: (userData: any) => Promise<UserProfile>;
   refreshProfile: () => Promise<void>;
+  /** Dev-only: Override user role for UI simulation */
+  overrideRole: (role: UserProfile['role']) => void;
+  /** Whether dev role selector is enabled */
+  isRoleSelectorEnabled: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const ROLE_SELECTOR_ENABLED = import.meta.env.VITE_ENABLE_ROLE_SELECTOR === 'true';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -72,8 +78,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /**
+   * Dev-only: Override the user's role in React state.
+   * This mutates the UI and sidebar behavior without affecting
+   * the real auth token or backend calls.
+   */
+  const overrideRole = useCallback((role: UserProfile['role']) => {
+    if (!ROLE_SELECTOR_ENABLED) return;
+    setUser(prev => prev ? { ...prev, role } : null);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, registerUser, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        login,
+        logout,
+        registerUser,
+        refreshProfile,
+        overrideRole,
+        isRoleSelectorEnabled: ROLE_SELECTOR_ENABLED,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

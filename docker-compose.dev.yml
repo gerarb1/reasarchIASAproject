@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: research_db_dev
+    environment:
+      POSTGRES_DB: research_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_password_super_secure_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - research_net_dev
+
+  backend-dev:
+    image: node:20-alpine
+    container_name: research_backend_dev
+    working_dir: /app/backend
+    volumes:
+      - .:/app
+      - /app/backend/node_modules
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=dev_password_super_secure_123
+      - DB_NAME=research_platform
+      - JWT_SECRET=secret_largo_para_desarrollo_local_mantenlo_seguro
+    depends_on:
+      - postgres
+    networks:
+      - research_net_dev
+    command: sh -c "npm install && npm run dev"
+
+  frontend-dev:
+    image: node:20-alpine
+    container_name: research_frontend_dev
+    working_dir: /app/frontend
+    volumes:
+      - .:/app
+      - /app/frontend/node_modules
+      - /app/node_modules
+    ports:
+      - "5173:5173" # Puerto por defecto de Vite
+    environment:
+      - VITE_ENABLE_ROLE_SELECTOR=true # Activamos el mock provider del CTO
+      - VITE_API_URL=http://localhost:3000/api/v1
+    depends_on:
+      - backend-dev
+    networks:
+      - research_net_dev
+    # OBLIGATORIO: --host permite mapear el puerto fuera del contenedor hacia Windows
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  pgdata_dev:
+
+networks:
+  research_net_dev:
+    driver: bridge
